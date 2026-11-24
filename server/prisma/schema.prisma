@@ -1,0 +1,143 @@
+// To move to Postgres: change provider to "postgresql" and DATABASE_URL.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// role:   SUPER_ADMIN | ADMIN | EMPLOYEE
+// status: DRAFT (registered) | PENDING (application submitted) | APPROVED | REJECTED | SUSPENDED
+model User {
+  id           String    @id @default(cuid())
+  employeeId   String    @unique
+  name         String
+  email        String    @unique
+  phone        String?
+  passwordHash String
+  role         String    @default("EMPLOYEE")
+  status       String    @default("DRAFT")
+  photoPath    String?
+  department   String?
+  designation  String?
+  dateOfBirth  DateTime?
+  address      String?
+  reviewNote   String?
+  reviewedAt   DateTime?
+  submittedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  documents     Document[]   @relation("DocOwner")
+  reviewedDocs  Document[]   @relation("DocReviewer")
+  assigned      Task[]       @relation("Assignee")
+  reported      Task[]       @relation("Reporter")
+  comments      Comment[]
+  attachments   Attachment[]
+  activities    Activity[]
+  projects      Project[]
+}
+
+// type: AADHAAR | PAN | PASSPORT | DRIVING_LICENSE | VOTER_ID | RESUME | EDUCATION | OFFER_LETTER | OTHER
+// status: PENDING | VERIFIED | REJECTED
+model Document {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation("DocOwner", fields: [userId], references: [id], onDelete: Cascade)
+  type         String
+  label        String?
+  docNumber    String?
+  fileName     String
+  filePath     String
+  mimeType     String
+  size         Int
+  status       String    @default("PENDING")
+  reviewNote   String?
+  reviewedById String?
+  reviewedBy   User?     @relation("DocReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt   DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  name        String
+  description String?
+  color       String   @default("#6366f1")
+  taskCounter Int      @default(0)
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  tasks       Task[]
+}
+
+// status: TODO | IN_PROGRESS | IN_REVIEW | DONE
+// priority: LOW | MEDIUM | HIGH | URGENT
+model Task {
+  id          String       @id @default(cuid())
+  key         String       @unique
+  projectId   String
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  status      String       @default("TODO")
+  priority    String       @default("MEDIUM")
+  position    Float        @default(0)
+  assigneeId  String?
+  assignee    User?        @relation("Assignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  reporterId  String
+  reporter    User         @relation("Reporter", fields: [reporterId], references: [id])
+  dueDate     DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  comments    Comment[]
+  attachments Attachment[]
+  activities  Activity[]
+
+  @@index([assigneeId])
+  @@index([projectId, status])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  body      String
+  createdAt DateTime @default(now())
+}
+
+model Attachment {
+  id         String   @id @default(cuid())
+  taskId     String
+  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  uploaderId String
+  uploader   User     @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+  fileName   String
+  filePath   String
+  mimeType   String
+  size       Int
+  createdAt  DateTime @default(now())
+}
+
+model Activity {
+  id        String   @id @default(cuid())
+  taskId    String?
+  task      Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  actorId   String
+  actor     User     @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  action    String
+  meta      String?
+  createdAt DateTime @default(now())
+}
+
+model Counter {
+  name  String @id
+  value Int    @default(0)
+}

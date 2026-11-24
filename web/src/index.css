@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg: 247 247 251;
+    --surface: 255 255 255;
+    --surface-2: 241 242 248;
+    --border: 228 229 238;
+    --fg: 17 18 39;
+    --muted: 104 107 135;
+    --brand: 99 91 255;
+    --brand-2: 217 70 239;
+    --success: 16 163 110;
+    --warning: 217 140 6;
+    --danger: 225 54 82;
+    --info: 14 140 233;
+    color-scheme: light;
+  }
+  .dark {
+    --bg: 9 10 20;
+    --surface: 17 18 32;
+    --surface-2: 26 27 45;
+    --border: 40 42 64;
+    --fg: 236 237 250;
+    --muted: 140 143 175;
+    --brand: 129 120 255;
+    --brand-2: 232 105 249;
+    --success: 52 211 153;
+    --warning: 251 191 36;
+    --danger: 251 113 133;
+    --info: 56 189 248;
+    color-scheme: dark;
+  }
+  html { -webkit-font-smoothing: antialiased; }
+  body { @apply bg-bg text-fg font-sans; font-feature-settings: "ss01", "cv11"; }
+  ::selection { background: rgb(var(--brand) / 0.25); }
+  * { scrollbar-width: thin; scrollbar-color: rgb(var(--border)) transparent; }
+  :focus-visible { outline: 2px solid rgb(var(--brand)); outline-offset: 2px; border-radius: 8px; }
+}
+
+@layer components {
+  .card { @apply bg-surface border border-border rounded-2xl shadow-soft; }
+  .glass { @apply bg-surface/70 backdrop-blur-xl border border-border/70; }
+  .text-gradient { @apply bg-gradient-to-r from-brand to-brand-2 bg-clip-text text-transparent; }
+  .input {
+    @apply w-full h-11 rounded-xl border border-border bg-surface px-3.5 text-sm text-fg placeholder:text-muted/70
+           transition-all duration-200 outline-none hover:border-muted/40
+           focus:border-brand focus:ring-4 focus:ring-brand/15;
+  }
+  .label { @apply mb-1.5 block text-[13px] font-semibold text-fg/80; }
+  .grid-bg {
+    background-image: linear-gradient(rgb(var(--border) / 0.6) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--border) / 0.6) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
