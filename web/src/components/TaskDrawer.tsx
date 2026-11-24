@@ -59,7 +59,7 @@ export function TaskDrawer({ taskId, onClose, people, onChanged, onDeleted }: {
   }
   async function attach(f?: File) {
     if (!task || !f) return;
-    if (f.size > 20 * 1024 * 1024) return toast.error("Attachments must be under 20 MB");
+    if (f.size > 4 * 1024 * 1024) return toast.error("Attachments must be under 4 MB");
     setBusy("attach");
     try {
       const fd = new FormData(); fd.append("file", f);

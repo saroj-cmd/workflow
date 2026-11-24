@@ -1,11 +1,15 @@
-// To move to Postgres: change provider to "postgresql" and DATABASE_URL.
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // "rhel-openssl-3.0.x" is the runtime Vercel functions use.
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
+// Postgres (Supabase). DATABASE_URL = pooled connection used by the app,
+// DIRECT_URL = direct connection used by `prisma db push`.
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // role:   SUPER_ADMIN | ADMIN | EMPLOYEE

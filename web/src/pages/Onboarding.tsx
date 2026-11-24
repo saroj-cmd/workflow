@@ -105,7 +105,7 @@ export function Onboarding() {
               <div className="grid h-12 w-12 place-items-center rounded-2xl bg-brand/10 text-brand transition group-hover:scale-105"><Camera className="h-5 w-5" /></div>
               <div className="flex-1">
                 <p className="font-bold">{hasPhoto ? "Change photo" : "Upload photo"}</p>
-                <p className="text-xs text-muted">JPG or PNG, up to 5 MB</p>
+                <p className="text-xs text-muted">JPG or PNG, up to 4 MB</p>
               </div>
               {hasPhoto && <Check className="h-5 w-5 text-success" />}
               <input type="file" hidden accept="image/jpeg,image/png,image/webp" onChange={(e) => uploadPhoto(e.target.files?.[0])} />

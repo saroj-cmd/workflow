@@ -1,10 +1,27 @@
 {
   "name": "workflow",
   "private": true,
+  "type": "module",
+  "workspaces": [
+    "server",
+    "web"
+  ],
+  "prisma": {
+    "schema": "server/prisma/schema.prisma"
+  },
   "scripts": {
-    "setup": "npm --prefix server install && npm --prefix web install && npm --prefix server run db:push && npm --prefix server run db:seed",
-    "dev:server": "npm --prefix server run dev",
-    "dev:web": "npm --prefix web run dev",
-    "typecheck": "npm --prefix server run typecheck && npm --prefix web run typecheck"
+    "dev:server": "npm run dev -w server",
+    "dev:web": "npm run dev -w web",
+    "db:setup": "npm run db:push -w server && npm run db:seed -w server",
+    "typecheck": "npm run typecheck -w server && npm run typecheck -w web",
+    "vercel-build": "prisma generate && npm run build -w web"
+  },
+  "allowScripts": {
+    "@prisma/client@6.0.1": true,
+    "@prisma/engines@6.0.1": true,
+    "esbuild@0.23.1": true,
+    "esbuild@0.21.5": true,
+    "prisma@6.0.1": true,
+    "fsevents": false
   }
 }

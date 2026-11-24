@@ -4,7 +4,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { ah, HttpError } from "../lib/http.js";
 import { requireAuth, publicUser } from "../lib/auth.js";
-import { photoUpload, relPath, removeFile } from "../lib/upload.js";
+import { photoUpload, saveFile, removeFile } from "../lib/storage.js";
 
 export const meRouter = Router();
 meRouter.use(requireAuth);
@@ -32,11 +32,9 @@ meRouter.post(
   photoUpload.single("photo"),
   ah(async (req, res) => {
     if (!req.file) throw new HttpError(400, "Please choose a photo");
+    const photoPath = await saveFile("photos", req.file);
     removeFile(req.user!.photoPath);
-    const user = await prisma.user.update({
-      where: { id: req.user!.id },
-      data: { photoPath: relPath(req.file.path) },
-    });
+    const user = await prisma.user.update({ where: { id: req.user!.id }, data: { photoPath } });
     res.json({ user: publicUser(user) });
   })
 );

@@ -1,11 +1,10 @@
 import { Router } from "express";
-import fs from "node:fs";
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { ah, HttpError, notFound, forbidden } from "../lib/http.js";
 import { requireAuth, requireRole } from "../lib/auth.js";
-import { attachmentUpload, relPath, absPath, removeFile } from "../lib/upload.js";
+import { attachmentUpload, saveFile, removeFile, sendFile } from "../lib/storage.js";
 import { TASK_STATUSES, PRIORITIES, isStaff } from "../lib/constants.js";
 
 export const tasksRouter = Router();
@@ -60,7 +59,7 @@ tasksRouter.get(
       status: q.status,
       priority: q.priority,
       assigneeId: !isStaff(me.role) || q.mine ? me.id : q.assigneeId === "none" ? null : q.assigneeId,
-      ...(q.search && { OR: [{ title: { contains: q.search } }, { key: { contains: q.search.toUpperCase() } }] }),
+      ...(q.search && { OR: [{ title: { contains: q.search, mode: "insensitive" } }, { key: { contains: q.search.toUpperCase() } }] }),
     };
     const tasks = await prisma.task.findMany({
       where,
@@ -204,26 +203,22 @@ tasksRouter.post(
   "/:id/attachments",
   attachmentUpload.single("file"),
   ah(async (req, res) => {
-    try {
-      const task = await loadTaskFor(req, req.params.id);
-      if (!req.file) throw new HttpError(400, "Please choose a file");
-      const attachment = await prisma.attachment.create({
-        data: {
-          taskId: task.id,
-          uploaderId: req.user!.id,
-          fileName: req.file.originalname,
-          filePath: relPath(req.file.path),
-          mimeType: req.file.mimetype,
-          size: req.file.size,
-        },
-        include: { uploader: { select: { id: true, name: true } } },
-      });
-      await log(task.id, req.user!.id, "attached", { file: req.file.originalname });
-      res.status(201).json({ attachment });
-    } catch (e) {
-      if (req.file) removeFile(relPath(req.file.path));
-      throw e;
-    }
+    const task = await loadTaskFor(req, req.params.id);
+    if (!req.file) throw new HttpError(400, "Please choose a file");
+    const filePath = await saveFile("attachments", req.file);
+    const attachment = await prisma.attachment.create({
+      data: {
+        taskId: task.id,
+        uploaderId: req.user!.id,
+        fileName: req.file.originalname,
+        filePath,
+        mimeType: req.file.mimetype,
+        size: req.file.size,
+      },
+      include: { uploader: { select: { id: true, name: true } } },
+    });
+    await log(task.id, req.user!.id, "attached", { file: req.file.originalname });
+    res.status(201).json({ attachment });
   })
 );
 
@@ -233,11 +228,7 @@ tasksRouter.get(
     await loadTaskFor(req, req.params.id);
     const a = await prisma.attachment.findUnique({ where: { id: req.params.attId } });
     if (!a || a.taskId !== req.params.id) throw notFound("Attachment");
-    const file = absPath(a.filePath);
-    if (!fs.existsSync(file)) throw notFound("File");
-    res.setHeader("Content-Type", a.mimeType);
-    res.setHeader("Content-Disposition", `inline; filename="${encodeURIComponent(a.fileName)}"`);
-    res.sendFile(file);
+    await sendFile(res, a.filePath, { contentType: a.mimeType, fileName: a.fileName });
   })
 );
 

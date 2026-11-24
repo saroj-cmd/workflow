@@ -3,21 +3,28 @@
 Employee onboarding (profile, photo, ID documents, generated employee ID, admin approval) plus a Jira-style work board (projects, tasks, drag-and-drop, comments, file attachments, activity log).
 
 ```
-server/   REST API — Node, Express, TypeScript, Prisma (SQLite in dev → Postgres in prod)
+server/   REST API — Node, Express, TypeScript, Prisma + Postgres
 web/      Web app — React, Vite, Tailwind, Framer Motion
+api/      Vercel serverless entry (serves the same Express app)
 ```
 
 The API is the single backend for the web app **and the future mobile apps**: versioned at `/api/v1`, stateless Bearer-token (JWT) auth, JSON in/out, multipart for uploads. Nothing is web-only.
 
+**Hosting:** see [DEPLOY.md](DEPLOY.md) for the free Supabase (database + file storage) + Vercel (website + API) setup.
+
 ## Run locally
 
+The app needs a Postgres database — the easiest is the free Supabase project from [DEPLOY.md](DEPLOY.md) (Part 1).
+
 ```bash
-npm run setup          # install both apps, create the DB, seed the super admin
-npm run dev:server     # API on http://localhost:4000
-npm run dev:web        # Web on http://localhost:5173
+npm install                      # installs server + web (npm workspaces)
+cp server/.env.example server/.env   # then fill in the values
+npm run db:setup                 # creates tables, super admin and storage bucket
+npm run dev:server               # API on http://localhost:4000
+npm run dev:web                  # Web on http://localhost:5173
 ```
 
-Super admin login comes from `server/.env` (`SUPERADMIN_EMAIL` / `SUPERADMIN_PASSWORD`). Change it before sharing anything.
+If `SUPABASE_URL` / `SUPABASE_SERVICE_KEY` are empty, uploads are saved to `server/uploads/` instead of Supabase Storage.
 
 ## Roles
 
@@ -49,7 +56,6 @@ Errors are always `{ "error": "Human readable message" }` with a proper HTTP sta
 
 ## Before production
 
-- Switch `server/prisma/schema.prisma` provider to `postgresql` and set `DATABASE_URL`.
-- Move uploads from `server/uploads/` to S3 / cloud storage (only `server/src/lib/upload.ts` changes). Aadhaar/PAN files are sensitive — use a private bucket with encryption.
+- Uploads go through the API and are capped at 4 MB (Vercel limit). For bigger files, switch to signed direct-to-storage uploads (`server/src/lib/storage.ts`).
 - Add refresh tokens, rate limiting on `/auth/*`, email verification and password reset.
 - Add push/email notifications (assignment, approval) — needed for the mobile apps too.

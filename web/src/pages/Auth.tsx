@@ -143,7 +143,7 @@ export function RegisterPage() {
   function pickPhoto(f?: File) {
     if (!f) return;
     if (!f.type.startsWith("image/")) return toast.error("Please choose an image");
-    if (f.size > 5 * 1024 * 1024) return toast.error("Photo must be under 5 MB");
+    if (f.size > 4 * 1024 * 1024) return toast.error("Photo must be under 4 MB");
     setPhoto(f);
     setPreview(URL.createObjectURL(f));
   }
@@ -181,7 +181,7 @@ export function RegisterPage() {
           </div>
           <div>
             <p className="text-sm font-semibold">{photo ? "Change photo" : "Add your photo"}</p>
-            <p className="text-xs text-muted">A clear, front-facing photo. JPG or PNG, up to 5 MB.</p>
+            <p className="text-xs text-muted">A clear, front-facing photo. JPG or PNG, up to 4 MB.</p>
           </div>
           <input type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={(e) => pickPhoto(e.target.files?.[0])} />
         </label>

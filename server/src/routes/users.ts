@@ -1,12 +1,11 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
-import fs from "node:fs";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { ah, HttpError, notFound, forbidden } from "../lib/http.js";
 import { requireAuth, requireRole, publicUser } from "../lib/auth.js";
 import { nextEmployeeId } from "../lib/ids.js";
-import { absPath, removeFile } from "../lib/upload.js";
+import { removeFile, sendFile } from "../lib/storage.js";
 import { USER_STATUSES, ROLES, isStaff } from "../lib/constants.js";
 import { profileSchema } from "./me.js";
 
@@ -21,10 +20,9 @@ usersRouter.get(
     if (!u?.photoPath) throw notFound("Photo");
     const me = req.user!;
     if (me.id !== u.id && !isStaff(me.role) && u.status !== "APPROVED") throw forbidden();
-    const file = absPath(u.photoPath);
-    if (!fs.existsSync(file)) throw notFound("Photo");
-    res.setHeader("Cache-Control", "private, max-age=300");
-    res.sendFile(file);
+    const ext = u.photoPath.split(".").pop();
+    const type = ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg";
+    await sendFile(res, u.photoPath, { contentType: type, cache: "private, max-age=300" });
   })
 );
 
@@ -53,7 +51,7 @@ usersRouter.get(
       where: {
         status,
         role,
-        ...(q && { OR: [{ name: { contains: q } }, { email: { contains: q } }, { employeeId: { contains: q } }] }),
+        ...(q && { OR: [{ name: { contains: q, mode: "insensitive" } }, { email: { contains: q, mode: "insensitive" } }, { employeeId: { contains: q, mode: "insensitive" } }] }),
       },
       include: { _count: { select: { documents: true, assigned: true } } },
       orderBy: { createdAt: "desc" },

@@ -94,7 +94,7 @@ export function UploadDocModal({ open, onClose, onUploaded, defaultType = "AADHA
   const reset = () => { setFile(null); setNumber(""); setLabel(""); };
   async function submit() {
     if (!file) return toast.error("Please choose a file");
-    if (file.size > 10 * 1024 * 1024) return toast.error("File must be under 10 MB");
+    if (file.size > 4 * 1024 * 1024) return toast.error("File must be under 4 MB");
     setBusy(true);
     try {
       const fd = new FormData();
@@ -115,7 +115,7 @@ export function UploadDocModal({ open, onClose, onUploaded, defaultType = "AADHA
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Upload a document" description="PDF, JPG or PNG, up to 10 MB. Only you and admins can see it."
+    <Modal open={open} onClose={onClose} title="Upload a document" description="PDF, JPG or PNG, up to 4 MB. Only you and admins can see it."
       footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button loading={busy} icon={FileUp} onClick={submit}>Upload</Button></>}>
       <div className="space-y-4">
         <Select label="Document type" value={type} onChange={(e) => setType(e.target.value as DocType)}>
@@ -135,7 +135,7 @@ export function UploadDocModal({ open, onClose, onUploaded, defaultType = "AADHA
             <Button size="sm" variant="ghost" onClick={() => setFile(null)}>Change</Button>
           </motion.div>
         ) : (
-          <Dropzone onFile={setFile} accept="application/pdf,image/jpeg,image/png,image/webp" hint="PDF, JPG, PNG · max 10 MB" />
+          <Dropzone onFile={setFile} accept="application/pdf,image/jpeg,image/png,image/webp" hint="PDF, JPG, PNG · max 4 MB" />
         )}
       </div>
     </Modal>

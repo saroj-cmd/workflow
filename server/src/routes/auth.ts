@@ -5,7 +5,7 @@ import { prisma } from "../lib/prisma.js";
 import { ah, HttpError } from "../lib/http.js";
 import { signToken, requireAuth, publicUser } from "../lib/auth.js";
 import { nextEmployeeId } from "../lib/ids.js";
-import { photoUpload, relPath, removeFile } from "../lib/upload.js";
+import { photoUpload, saveFile } from "../lib/storage.js";
 
 export const authRouter = Router();
 
@@ -21,25 +21,21 @@ authRouter.post(
   "/register",
   photoUpload.single("photo"),
   ah(async (req, res) => {
-    try {
-      const data = registerSchema.parse(req.body);
-      const exists = await prisma.user.findUnique({ where: { email: data.email } });
-      if (exists) throw new HttpError(409, "An account with this email already exists");
-      const user = await prisma.user.create({
+    const data = registerSchema.parse(req.body);
+    const exists = await prisma.user.findUnique({ where: { email: data.email } });
+    if (exists) throw new HttpError(409, "An account with this email already exists");
+    const photoPath = req.file ? await saveFile("photos", req.file) : null;
+    const user = await prisma.user.create({
         data: {
-          name: data.name,
-          email: data.email,
-          phone: data.phone || null,
-          passwordHash: await bcrypt.hash(data.password, 10),
-          employeeId: await nextEmployeeId(),
-          photoPath: req.file ? relPath(req.file.path) : null,
-        },
-      });
-      res.status(201).json({ token: signToken(user.id), user: publicUser(user) });
-    } catch (e) {
-      if (req.file) removeFile(relPath(req.file.path));
-      throw e;
-    }
+        name: data.name,
+        email: data.email,
+        phone: data.phone || null,
+        passwordHash: await bcrypt.hash(data.password, 10),
+        employeeId: await nextEmployeeId(),
+        photoPath,
+      },
+    });
+    res.status(201).json({ token: signToken(user.id), user: publicUser(user) });
   })
 );
 
