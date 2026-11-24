@@ -21,8 +21,20 @@ app.use(cors({ origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split("
 app.use(express.json({ limit: "1mb" }));
 
 // Versioned REST API — shared by the web app and future mobile apps.
+const REQUIRED_ENV = ["DATABASE_URL", "DIRECT_URL", "JWT_SECRET"];
+const missingEnv = () => REQUIRED_ENV.filter((k) => !process.env[k]);
+
 const api = express.Router();
-api.get("/health", (_req, res) => res.json({ ok: true, storage: storageMode }));
+api.get("/health", (_req, res) => {
+  const missing = missingEnv();
+  res.status(missing.length ? 503 : 200).json({ ok: !missing.length, storage: storageMode, missing });
+});
+// If the server is misconfigured (e.g. env vars not set on Vercel), say so clearly.
+api.use((_req, res, next) => {
+  const missing = missingEnv();
+  if (missing.length) return res.status(503).json({ error: `Server is missing settings: ${missing.join(", ")}` });
+  next();
+});
 api.use("/auth", authRouter);
 api.use("/me", meRouter);
 api.use("/users", usersRouter);
